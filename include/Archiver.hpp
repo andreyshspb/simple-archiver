@@ -11,8 +11,8 @@ class Archiver {
 public:
     Archiver() = default;
 
-    void create(const std::string &sourcePath, const std::string &archivePath);
-    void extract(const std::string &placePath, const std::string &archivePath);
+    void create(const std::string &inputPath, const std::string &archivePath);
+    void extract(const std::string &outputPath, const std::string &archivePath);
 
 private:
     std::string archivePath_;

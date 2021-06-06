@@ -10,21 +10,21 @@
 #include <utime.h>
 
 
-void Archiver::create(const std::string &sourcePath, const std::string &archivePath) {
+void Archiver::create(const std::string &inputPath, const std::string &archivePath) {
     archivePath_ = archivePath;
     archive_ = std::ofstream(archivePath, std::ios::binary);
-    walk(sourcePath);
+    walk(inputPath);
     archive_.close();
 }
 
 
-void Archiver::extract(const std::string &placePath, const std::string &archivePath) {
+void Archiver::extract(const std::string &outputPath, const std::string &archivePath) {
     std::unordered_map<size_t, std::string> nodeToPath;
 
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
     while (archive >> info) {
-        std::string path = placePath + '/' + nodeToPath[info.getParent()] + info.getName();
+        std::string path = outputPath + '/' + nodeToPath[info.getParent()] + info.getName();
         std::cout << path << '\n';
 
         if (S_ISDIR(info.getMode())) {
@@ -36,7 +36,7 @@ void Archiver::extract(const std::string &placePath, const std::string &archiveP
             close(fd);
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
-            std::string from = placePath + '/' + nodeToPath[info.getNode()];
+            std::string from = outputPath + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
         }
 
