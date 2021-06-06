@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <utime.h>
 
 
 void Archiver::create(const std::string &sourcePath, const std::string &archivePath) {
@@ -28,21 +29,21 @@ void Archiver::extract(const std::string &placePath, const std::string &archiveP
 
         if (S_ISDIR(info.getMode())) {
             mkdir(path.c_str(), info.getMode());
-            chown(path.c_str(), info.getUID(), info.getGID());
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName() + '/';
-        }
-
-        if (S_ISREG(info.getMode()) && !nodeToPath.contains(info.getNode())) {
+        } else if (S_ISREG(info.getMode()) && !nodeToPath.contains(info.getNode())) {
             int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, info.getMode());
             write(fd, reinterpret_cast<const void *>(info.getData()), info.getDataSize());
-            fchown(fd, info.getUID(), info.getGID());
             close(fd);
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
             std::string from = placePath + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
-            chown(path.c_str(), info.getUID(), info.getGID());
         }
+
+        chown(path.c_str(), info.getUID(), info.getGID());
+
+        struct utimbuf buffer[2] = { info.getAccessTime(), info.getModifiedTime() };
+        utime(path.c_str(), reinterpret_cast<const struct utimbuf *>(&buffer));
 
     }
     archive.close();
