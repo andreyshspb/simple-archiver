@@ -20,6 +20,7 @@ void Archiver::create(const std::string &inputPath, const std::string &archivePa
 
 void Archiver::extract(const std::string &outputPath, const std::string &archivePath) {
     std::unordered_map<size_t, std::string> nodeToPath;
+    std::vector<std::pair<std::string, std::pair<time_t, time_t>>> timeChanging;
 
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
@@ -42,11 +43,14 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
 
         chown(path.c_str(), info.getUID(), info.getGID());
 
-        struct utimbuf buffer[2] = { info.getAccessTime(), info.getModifiedTime() };
-        utime(path.c_str(), reinterpret_cast<const struct utimbuf *>(&buffer));
-
+        timeChanging.push_back({path, {info.getAccessTime(), info.getModifiedTime()}});
     }
     archive.close();
+
+    for (auto item : timeChanging) {
+        struct utimbuf buffer[2] = { item.second.first, item.second.second };
+        utime(item.first.c_str(), reinterpret_cast<const struct utimbuf *>(&buffer));
+    }
 }
 
 
