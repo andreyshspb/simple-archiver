@@ -13,7 +13,7 @@
 void Archiver::create(const std::string &inputPath, const std::string &archivePath) {
     archivePath_ = archivePath;
     archive_ = std::ofstream(archivePath, std::ios::binary);
-    walk(inputPath);
+    walk(pathHandler(inputPath));
     archive_.close();
 }
 
@@ -25,7 +25,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
     while (archive >> info) {
-        std::string path = outputPath + '/' + nodeToPath[info.getParent()] + info.getName();
+        std::string path = pathHandler(outputPath) + '/' + nodeToPath[info.getParent()] + info.getName();
 
         if (S_ISDIR(info.getMode())) {
             mkdir(path.c_str(), info.getMode());
@@ -36,7 +36,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             close(fd);
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
-            std::string from = outputPath + '/' + nodeToPath[info.getNode()];
+            std::string from = pathHandler(outputPath) + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
             symlink(info.getData(), path.c_str());    // info.getData -- path
@@ -111,10 +111,13 @@ std::vector<char> Archiver::takeData(const std::string &path) {
 
 std::string Archiver::pathHandler(const std::string &path) {
     if (path.starts_with("./")) {
-        return path.substr(2, path.size());
+        return path.substr(path.size() - 2);
     }
-    if (path.starts_with("/")) {
-        return path.substr(1, path.size());
+    if (path.starts_with('/')) {
+        return path.substr(path.size() - 1);
+    }
+    if (path.ends_with('/')) {
+        return path.substr(0, path.size() - 1);
     }
     return path;
 }
