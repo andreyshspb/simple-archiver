@@ -26,7 +26,6 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
     FileInfo info;
     while (archive >> info) {
         std::string path = outputPath + '/' + nodeToPath[info.getParent()] + info.getName();
-        std::cout << path << '\n';
 
         if (S_ISDIR(info.getMode())) {
             mkdir(path.c_str(), info.getMode());
@@ -39,6 +38,10 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
         } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
             std::string from = outputPath + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
+        } else if (S_ISLNK(info.getMode())) {
+            symlink(info.getData(), path.c_str());    // info.getData -- path
+        } else if (S_ISFIFO(info.getMode())) {
+            mkfifo(path.c_str(), info.getMode());
         }
 
         chown(path.c_str(), info.getUID(), info.getGID());
@@ -78,6 +81,15 @@ void Archiver::walk(const std::string &path) {
         if (S_ISREG(info.st_mode) && !usedNode.contains(info.st_ino)) {
             data = takeData(currentFile);
             usedNode.insert(info.st_ino);
+        }
+        if (S_ISLNK(info.st_mode)) {
+            size_t bufferSize = 256;
+            char buffer[bufferSize];
+            size_t pathSize = readlink(currentFile.c_str(), buffer, bufferSize);
+            data.resize(pathSize);
+            for (int i = 0; i < pathSize; i++) {
+                data[i] = buffer[i];
+            }
         }
         FileInfo fileInfo(dirInfo.st_ino, name, info, data);
         archive_ << fileInfo;
