@@ -21,8 +21,4 @@ private:
 
     void walk(const std::string &path);
 
-    static std::vector<char> takeData(const std::string &path);
-    static std::string pathHandler(const std::string &path);
-    static bool pathsEqual(const std::string &first, const std::string &second);
-
 };

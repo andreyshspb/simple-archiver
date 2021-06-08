@@ -1,5 +1,6 @@
 #include "Archiver.hpp"
 #include "FileInfo.hpp"
+#include "util.hpp"
 
 #include <iostream>
 #include <unordered_map>
@@ -13,7 +14,7 @@
 void Archiver::create(const std::string &inputPath, const std::string &archivePath) {
     archivePath_ = archivePath;
     archive_ = std::ofstream(archivePath, std::ios::binary);
-    walk(pathHandler(inputPath));
+    walk(util::stripPath(inputPath));
     archive_.close();
 }
 
@@ -25,7 +26,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
     while (archive >> info) {
-        std::string path = pathHandler(outputPath) + '/' + nodeToPath[info.getParent()] + info.getName();
+        std::string path = util::stripPath(outputPath) + '/' + nodeToPath[info.getParent()] + info.getName();
 
         if (S_ISDIR(info.getMode())) {
             mkdir(path.c_str(), info.getMode());
@@ -36,7 +37,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             close(fd);
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
-            std::string from = pathHandler(outputPath) + '/' + nodeToPath[info.getNode()];
+            std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
             symlink(info.getData(), path.c_str());    // info.getData -- path
@@ -70,7 +71,7 @@ void Archiver::walk(const std::string &path) {
         std::string name(entry->d_name);
         std::string currentFile = path + '/' + name;
         if (name == "." || name == "..") continue;
-        if (pathsEqual(currentFile, archivePath_)) continue;
+        if (util::pathsEqual(currentFile, archivePath_)) continue;
 
         struct stat info{};
         if (lstat(currentFile.c_str(), &info) < 0) {
@@ -79,7 +80,7 @@ void Archiver::walk(const std::string &path) {
 
         std::vector<char> data;
         if (S_ISREG(info.st_mode) && !usedNode.contains(info.st_ino)) {
-            data = takeData(currentFile);
+            data = util::takeDataFromFile(currentFile);
             usedNode.insert(info.st_ino);
         }
         if (S_ISLNK(info.st_mode)) {
@@ -100,28 +101,4 @@ void Archiver::walk(const std::string &path) {
     }
 
     closedir(directory);
-}
-
-
-std::vector<char> Archiver::takeData(const std::string &path) {
-    std::ifstream in(path);
-    return std::vector<char>(std::istreambuf_iterator<char>(in),
-                             std::istreambuf_iterator<char>());
-}
-
-std::string Archiver::pathHandler(const std::string &path) {
-    if (path.starts_with("./")) {
-        return path.substr(path.size() - 2);
-    }
-    if (path.starts_with('/')) {
-        return path.substr(path.size() - 1);
-    }
-    if (path.ends_with('/')) {
-        return path.substr(0, path.size() - 1);
-    }
-    return path;
-}
-
-bool Archiver::pathsEqual(const std::string &first, const std::string &second) {
-    return pathHandler(first) == pathHandler(second);
 }
