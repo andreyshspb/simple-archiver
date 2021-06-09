@@ -8,7 +8,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <utime.h>
 
 
 void Archiver::create(const std::string &inputPath, const std::string &archivePath) {
@@ -20,7 +19,7 @@ void Archiver::create(const std::string &inputPath, const std::string &archivePa
 
 
 void Archiver::extract(const std::string &outputPath, const std::string &archivePath) {
-    std::unordered_map<size_t, std::string> nodeToPath;
+    std::unordered_map<ino_t , std::string> nodeToPath;
     std::vector<std::pair<std::string, std::pair<struct timespec, struct timespec>>> timeChanging;
 
     std::ifstream archive(archivePath, std::ios::binary);
@@ -40,7 +39,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
-            symlink(info.getData(), path.c_str());    // info.getData -- path
+            symlink(info.getData(), path.c_str());
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISFIFO(info.getMode())) {
             mkfifo(path.c_str(), info.getMode());

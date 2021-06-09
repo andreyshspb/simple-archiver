@@ -19,11 +19,11 @@ public:
     std::string getName() { return name_; }
     char *getData() { return data_.data(); }
     size_t getDataSize() { return data_.size(); }
-    size_t getParent() { return parent_; }
-    size_t getNode() { return state_.st_ino; }
-    size_t getMode() { return state_.st_mode; }
-    size_t getUID() { return state_.st_uid; }
-    size_t getGID() { return state_.st_gid; }
+    ino_t getParent() { return parent_; }
+    ino_t getNode() { return state_.st_ino; }
+    mode_t getMode() { return state_.st_mode; }
+    uid_t getUID() { return state_.st_uid; }
+    gid_t getGID() { return state_.st_gid; }
     struct timespec getAccessTime() { return state_.st_atim; }
     struct timespec getModifiedTime() { return state_.st_mtim; }
 
@@ -32,7 +32,7 @@ public:
     friend std::ofstream &operator<<(std::ofstream &out, const FileInfo &info);
 
 private:
-    size_t parent_;
+    ino_t parent_;
     std::string name_;
     struct stat state_;
     std::vector<char> data_;

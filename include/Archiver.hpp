@@ -17,7 +17,7 @@ public:
 private:
     std::string archivePath_;
     std::ofstream archive_;
-    std::unordered_set<size_t> usedNode;
+    std::unordered_set<ino_t> usedNode;
 
     void walk(const std::string &path);
 
