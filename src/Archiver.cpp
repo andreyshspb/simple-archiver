@@ -21,7 +21,7 @@ void Archiver::create(const std::string &inputPath, const std::string &archivePa
 
 void Archiver::extract(const std::string &outputPath, const std::string &archivePath) {
     std::unordered_map<size_t, std::string> nodeToPath;
-    std::vector<std::pair<std::string, std::pair<time_t, time_t>>> timeChanging;
+    std::vector<std::pair<std::string, std::pair<struct timespec, struct timespec>>> timeChanging;
 
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
@@ -36,24 +36,34 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             write(fd, reinterpret_cast<const void *>(info.getData()), info.getDataSize());
             close(fd);
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
-        } else if (S_ISREG(info.getMode()) && nodeToPath.contains(info.getNode())) {
+        } else if (nodeToPath.contains(info.getNode())) {
             std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
+            std::cout << path << ' ' << from << '\n';
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
             symlink(info.getData(), path.c_str());    // info.getData -- path
+            nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (S_ISFIFO(info.getMode())) {
             mkfifo(path.c_str(), info.getMode());
+            nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         }
 
-        chown(path.c_str(), info.getUID(), info.getGID());
+        if (S_ISLNK(info.getMode())) {
+            lchown(path.c_str(), info.getUID(), info.getGID());
+            lchmod(path.c_str(), info.getMode());
+        } else {
+            chown(path.c_str(), info.getUID(), info.getGID());
+            chmod(path.c_str(), info.getMode());
+        }
 
         timeChanging.push_back({path, {info.getAccessTime(), info.getModifiedTime()}});
+
     }
     archive.close();
 
     for (auto item : timeChanging) {
-        struct utimbuf buffer[2] = { item.second.first, item.second.second };
-        utime(item.first.c_str(), reinterpret_cast<const struct utimbuf *>(&buffer));
+        struct timespec buffer[2] = { item.second.first, item.second.second };
+        utimensat(AT_FDCWD, item.first.c_str(), buffer, AT_SYMLINK_NOFOLLOW);
     }
 }
 
@@ -81,9 +91,7 @@ void Archiver::walk(const std::string &path) {
         std::vector<char> data;
         if (S_ISREG(info.st_mode) && !usedNode.contains(info.st_ino)) {
             data = util::takeDataFromFile(currentFile);
-            usedNode.insert(info.st_ino);
-        }
-        if (S_ISLNK(info.st_mode)) {
+        } else if (S_ISLNK(info.st_mode) && !usedNode.contains(info.st_ino)) {
             size_t bufferSize = 256;
             char buffer[bufferSize];
             size_t pathSize = readlink(currentFile.c_str(), buffer, bufferSize);
@@ -94,6 +102,8 @@ void Archiver::walk(const std::string &path) {
         }
         FileInfo fileInfo(dirInfo.st_ino, name, info, data);
         archive_ << fileInfo;
+
+        usedNode.insert(info.st_ino);
 
         if (S_ISDIR(info.st_mode)) {
             walk(currentFile);

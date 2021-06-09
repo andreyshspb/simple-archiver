@@ -24,8 +24,8 @@ public:
     size_t getMode() { return state_.st_mode; }
     size_t getUID() { return state_.st_uid; }
     size_t getGID() { return state_.st_gid; }
-    time_t getAccessTime() { return state_.st_atime; }
-    time_t getModifiedTime() { return state_.st_mtime; }
+    struct timespec getAccessTime() { return state_.st_atim; }
+    struct timespec getModifiedTime() { return state_.st_mtim; }
 
     friend std::ifstream &operator>>(std::ifstream &in, FileInfo &info);
 
