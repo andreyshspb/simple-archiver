@@ -38,7 +38,6 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (nodeToPath.contains(info.getNode())) {
             std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
-            std::cout << path << ' ' << from << '\n';
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
             symlink(info.getData(), path.c_str());    // info.getData -- path
