@@ -51,6 +51,9 @@ DataCLI ArchiverCLI::operator()(int argc, char *argv[]) {
         }
     }
 
+    if (!directoryFlag) {
+        result.placePath = ".";
+    }
     result.archivePath = parameters.back();
 
     if (!createFlag && !extractFlag) {

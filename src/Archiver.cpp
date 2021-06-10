@@ -19,7 +19,7 @@ void Archiver::create(const std::string &inputPath, const std::string &archivePa
     }
     archiveNode_ = {archiveInfo.st_dev, archiveInfo.st_ino};
 
-    walk(util::stripPath(inputPath));
+    walk(inputPath);
 
     archive_.close();
 }
@@ -78,6 +78,7 @@ void Archiver::walk(const std::string &path) {
 
     struct stat dirInfo{};
     if (lstat(path.c_str(), &dirInfo) < 0) {
+        std::cout << "yes, it is me" << '\n';
         throw std::runtime_error("something went wrong =(");
     }
 
