@@ -11,9 +11,16 @@
 
 
 void Archiver::create(const std::string &inputPath, const std::string &archivePath) {
-    archivePath_ = archivePath;
     archive_ = std::ofstream(archivePath, std::ios::binary);
+
+    struct stat archiveInfo{};
+    if (lstat(archivePath.c_str(), &archiveInfo) < 0) {
+        throw std::runtime_error("something went wrong =(");
+    }
+    archiveNode_ = {archiveInfo.st_dev, archiveInfo.st_ino};
+
     walk(util::stripPath(inputPath));
+
     archive_.close();
 }
 
@@ -79,17 +86,18 @@ void Archiver::walk(const std::string &path) {
         std::string name(entry->d_name);
         std::string currentFile = path + '/' + name;
         if (name == "." || name == "..") continue;
-        if (util::pathsEqual(currentFile, archivePath_)) continue;
 
         struct stat info{};
         if (lstat(currentFile.c_str(), &info) < 0) {
             throw std::runtime_error("something went wrong =(");
         }
+        std::pair<dev_t, ino_t> currentNode = {info.st_dev, info.st_ino};
+        if (currentNode == archiveNode_) continue;
 
         std::vector<char> data;
-        if (S_ISREG(info.st_mode) && !usedNode.contains(info.st_ino)) {
+        if (S_ISREG(info.st_mode) && !usedNode_.contains(info.st_ino)) {
             data = util::takeDataFromFile(currentFile);
-        } else if (S_ISLNK(info.st_mode) && !usedNode.contains(info.st_ino)) {
+        } else if (S_ISLNK(info.st_mode) && !usedNode_.contains(info.st_ino)) {
             size_t bufferSize = 256;
             char buffer[bufferSize];
             size_t pathSize = readlink(currentFile.c_str(), buffer, bufferSize);
@@ -101,7 +109,7 @@ void Archiver::walk(const std::string &path) {
         FileInfo fileInfo(dirInfo.st_ino, name, info, data);
         archive_ << fileInfo;
 
-        usedNode.insert(info.st_ino);
+        usedNode_.insert(info.st_ino);
 
         if (S_ISDIR(info.st_mode)) {
             walk(currentFile);

@@ -15,9 +15,9 @@ public:
     void extract(const std::string &outputPath, const std::string &archivePath);
 
 private:
-    std::string archivePath_;
+    std::pair<dev_t, ino_t> archiveNode_;
     std::ofstream archive_;
-    std::unordered_set<ino_t> usedNode;
+    std::unordered_set<ino_t> usedNode_;
 
     void walk(const std::string &path);
 

@@ -23,7 +23,3 @@ std::string util::stripPath(const std::string &path) {
     return result;
 }
 
-bool util::pathsEqual(const std::string &first, const std::string &second) {
-    return stripPath(first) == stripPath(second);
-}
-
