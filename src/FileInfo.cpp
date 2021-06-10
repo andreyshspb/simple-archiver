@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 
-FileInfo::FileInfo(size_t parent,
+FileInfo::FileInfo(std::pair<dev_t, ino_t> parent,
                    const std::string &name,
                    const struct stat &state,
                    const std::vector<char> &data) : parent_(parent),
@@ -14,8 +14,9 @@ FileInfo::FileInfo(size_t parent,
 
 
 std::ifstream &operator>>(std::ifstream &in, FileInfo &info) {
-    in.read(reinterpret_cast<char *>(&info.parent_), sizeof(size_t));
+    in.read(reinterpret_cast<char *>(&info.parent_.first), sizeof(dev_t));
     if (in.eof()) return in;
+    in.read(reinterpret_cast<char *>(&info.parent_.second), sizeof(ino_t));
 
     size_t nameLength;
     in.read(reinterpret_cast<char *>(&nameLength), sizeof(size_t));
@@ -42,7 +43,8 @@ std::ifstream &operator>>(std::ifstream &in, FileInfo &info) {
 }
 
 std::ofstream &operator<<(std::ofstream &out, const FileInfo &info) {
-    out.write(reinterpret_cast<const char *>(&info.parent_), sizeof(size_t));
+    out.write(reinterpret_cast<const char *>(&info.parent_.first), sizeof(dev_t));
+    out.write(reinterpret_cast<const char *>(&info.parent_.second), sizeof(ino_t));
 
     size_t nameSize = info.name_.size();
     out.write(reinterpret_cast<const char *>(&nameSize), sizeof(size_t));

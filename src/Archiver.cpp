@@ -3,7 +3,7 @@
 #include "util.hpp"
 
 #include <iostream>
-#include <unordered_map>
+#include <map>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -26,7 +26,7 @@ void Archiver::create(const std::string &inputPath, const std::string &archivePa
 
 
 void Archiver::extract(const std::string &outputPath, const std::string &archivePath) {
-    std::unordered_map<ino_t , std::string> nodeToPath;
+    std::map<std::pair<dev_t, ino_t>, std::string> nodeToPath;
     std::vector<std::pair<std::string, std::pair<struct timespec, struct timespec>>> timeChanging;
 
     std::ifstream archive(archivePath, std::ios::binary);
@@ -106,7 +106,7 @@ void Archiver::walk(const std::string &path) {
                 data[i] = buffer[i];
             }
         }
-        FileInfo fileInfo(dirInfo.st_ino, name, info, data);
+        FileInfo fileInfo({dirInfo.st_dev, dirInfo.st_ino}, name, info, data);
         archive_ << fileInfo;
 
         usedNode_.insert({info.st_dev, info.st_ino});
