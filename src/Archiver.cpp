@@ -41,6 +41,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
             int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, info.getMode());
             write(fd, reinterpret_cast<const void *>(info.getData()), info.getDataSize());
             close(fd);
+
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (nodeToPath.contains(info.getNode())) {
             std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
@@ -55,7 +56,6 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
 
         if (S_ISLNK(info.getMode())) {
             lchown(path.c_str(), info.getUID(), info.getGID());
-            lchmod(path.c_str(), info.getMode());
         } else {
             chown(path.c_str(), info.getUID(), info.getGID());
             chmod(path.c_str(), info.getMode());
