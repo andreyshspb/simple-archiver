@@ -4,7 +4,7 @@
 #include <iosfwd>
 #include <fstream>
 #include <vector>
-#include <unordered_set>
+#include <set>
 
 
 class Archiver {
@@ -17,7 +17,7 @@ public:
 private:
     std::pair<dev_t, ino_t> archiveNode_;
     std::ofstream archive_;
-    std::unordered_set<ino_t> usedNode_;
+    std::set<std::pair<dev_t, ino_t>> usedNode_;
 
     void walk(const std::string &path);
 

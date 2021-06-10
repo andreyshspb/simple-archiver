@@ -78,7 +78,6 @@ void Archiver::walk(const std::string &path) {
 
     struct stat dirInfo{};
     if (lstat(path.c_str(), &dirInfo) < 0) {
-        std::cout << "yes, it is me" << '\n';
         throw std::runtime_error("something went wrong =(");
     }
 
@@ -96,9 +95,9 @@ void Archiver::walk(const std::string &path) {
         if (currentNode == archiveNode_) continue;
 
         std::vector<char> data;
-        if (S_ISREG(info.st_mode) && !usedNode_.contains(info.st_ino)) {
+        if (S_ISREG(info.st_mode) && !usedNode_.contains({info.st_dev, info.st_ino})) {
             data = util::takeDataFromFile(currentFile);
-        } else if (S_ISLNK(info.st_mode) && !usedNode_.contains(info.st_ino)) {
+        } else if (S_ISLNK(info.st_mode) && !usedNode_.contains({info.st_dev, info.st_ino})) {
             size_t bufferSize = 256;
             char buffer[bufferSize];
             size_t pathSize = readlink(currentFile.c_str(), buffer, bufferSize);
@@ -110,7 +109,7 @@ void Archiver::walk(const std::string &path) {
         FileInfo fileInfo(dirInfo.st_ino, name, info, data);
         archive_ << fileInfo;
 
-        usedNode_.insert(info.st_ino);
+        usedNode_.insert({info.st_dev, info.st_ino});
 
         if (S_ISDIR(info.st_mode)) {
             walk(currentFile);
