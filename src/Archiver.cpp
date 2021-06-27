@@ -32,7 +32,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
     std::ifstream archive(archivePath, std::ios::binary);
     FileInfo info;
     while (archive >> info) {
-        std::string path = util::stripPath(outputPath) + '/' + nodeToPath[info.getParent()] + info.getName();
+        std::string path = util::fillPath(outputPath) + nodeToPath[info.getParent()] + info.getName();
 
         if (S_ISDIR(info.getMode())) {
             mkdir(path.c_str(), info.getMode());
@@ -44,7 +44,7 @@ void Archiver::extract(const std::string &outputPath, const std::string &archive
 
             nodeToPath[info.getNode()] = nodeToPath[info.getParent()] + info.getName();
         } else if (nodeToPath.contains(info.getNode())) {
-            std::string from = util::stripPath(outputPath) + '/' + nodeToPath[info.getNode()];
+            std::string from = util::fillPath(outputPath) + nodeToPath[info.getNode()];
             link(from.c_str(), path.c_str());
         } else if (S_ISLNK(info.getMode())) {
             symlink(info.getData(), path.c_str());

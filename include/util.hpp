@@ -7,7 +7,7 @@
 namespace util {
 
     std::vector<char> takeDataFromFile(const std::string &path);
-    std::string stripPath(const std::string &path);
+    std::string fillPath(const std::string &path);
 
 }  // namespace util
 
